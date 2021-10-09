@@ -20,4 +20,5 @@
 - `exit`
 ## Usage
 - `dockker-compose up -d`
+- `curl -i -H "Content-Type: application/json" -X POST -d '{"todo": "Dockerize Flask application with MongoDB backend"}' http://its.flask/todo` - send post curl request
 - go to **http://its.flask/todo** for request todo app
