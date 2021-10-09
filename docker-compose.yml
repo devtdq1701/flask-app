@@ -17,12 +17,12 @@ services:
       MONGODB_PASSWORD: quang12345
       MONGODB_HOSTNAME: mongodb
     volumes:
-      - appdata:/var/www
+      - ./app/data:/var/www
     depends_on:
       - mongodb
     networks:
-      - frontend
-      - backend
+      - flask-network
+      - mongo-network
 
   mongodb:
     image: mongo:4.0.8
@@ -36,9 +36,9 @@ services:
       MONGODB_DATA_DIR: /data/db
       MONDODB_LOG_DIR: /dev/null
     volumes:
-      - mongodbdata:/data/db
+      - ./mongodb-data:/data/db
     networks:
-      - backend
+      - mongo-network
 
   webserver:
     image: nginx
@@ -51,22 +51,70 @@ services:
       SERVICE_NAME: "webserver"
     ports:
       - "80:80"
-      - "443:443"
     volumes:
+      - ./php-app/public:/var/www/php
       - ./nginx/conf.d:/etc/nginx/conf.d
     depends_on:
       - flask
+      - php-app
     networks:
-      - frontend
+      - flask-network
+      - php-network
+
+  php-app:
+    build:
+      context: ./php-app
+      dockerfile: Dockerfile
+    image: php-app
+    container_name: php-app
+    restart: unless-stopped
+    working_dir: /var/www/php
+    volumes:
+      - ./php-app/public:/var/www/php
+    depends_on:
+      - mysql-db
+    networks:
+      - php-network
+      - mysql-network
+
+  mysql-db:
+    image: mysql:8
+    container_name: mysql-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: demo
+      MYSQL_USER: quangtran
+      MYSQL_PASSWORD: quang12345
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    networks:
+      - mysql-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5
+    container_name: phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql-db
+    depends_on:
+      - mysql-db
+    networks:
+      - mysql-network
 
 networks:
-  frontend:
+  flask-network:
     driver: bridge
-  backend:
+  mongo-network:
+    driver: bridge
+  php-network:
+    driver: bridge
+  mysql-network:
     driver: bridge
 
-volumes:
-  mongodbdata:
-    driver: local
-  appdata:
-    driver: local
+# volumes:
+#   mongodbdata:
+#     driver: local
+#   appdata:
+#     driver: local
